@@ -11,17 +11,17 @@
 *** TODAYS RUN DATE IS THE TIMEFRAME REFERENCE = 2018-03-01 ------ ***;
 DATA _NULL_;
 
-	CALL SYMPUT('_3yrdate', 
+	CALL SYMPUT('_3YR', 
 				 '2015-04-02'); /* 3 YEARS PRIOR TO PULL */
-	CALL SYMPUT('_2yrdate', 
+	CALL SYMPUT('_2YR', 
 				 '2016-04-02'); /* 2 YEARS PRIOR TO PULL */
-	CALL SYMPUT('_5yrdate',
+	CALL SYMPUT('_5YR',
 				 '2013-04-03'); /* 5 YEARS PRIOR TO PULL */
-	CALL SYMPUT('_16monthsago',
+	CALL SYMPUT('_16MO',
 				 '2016-12-02'); /* 16 MONTHS PRIOR TO PULL */
-	CALL SYMPUT('_120daysago', 
+	CALL SYMPUT('_120DAYS', 
 				 '2017-12-03'); /* 120 DAYS PRIOR TO PULL */
-	CALL SYMPUT('_1yr1mo', 
+	CALL SYMPUT('_13MO', 
 				 '2017-03-02'); /* 13 MONTHS PRIOR TO PULL */
 RUN;
 
@@ -49,7 +49,7 @@ DATA LOAN1;
 		  PLDATE = "" & 
 		  POFFDATE = "" &
 		  BNKRPTDATE = "" & 
-		  ownst in ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN");
+		  OWNST IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN");
 
 	*** CREATE `SS7BRSTATE` VARIABLE ----------------------------- ***;
 	SS7BRSTATE = CATS(SSNO1_RT7, SUBSTR(OWNBR, 1, 2));
@@ -437,7 +437,7 @@ RUN;
 DATA STATFLAGS;
 	SET dw.vw_loan(
 		KEEP = OWNBR SSNO1_RT7 ENTDATE STATFLAGS);
-	WHERE ENTDATE > "&_3yrdate" & STATFLAGS NE "";
+	WHERE ENTDATE > "&_3YR" & STATFLAGS NE "";
 RUN;
 
 PROC SQL; /* IDENTIFYING BAD STATFLAGS */
@@ -481,7 +481,7 @@ RUN;
 DATA BK2YRDROPS;
 	SET dw.vw_loan(
 		KEEP = SSNO1_RT7 OWNBR BNKRPTDATE BNKRPTCHAPTER ENTDATE);
-	WHERE ENTDATE > "&_2yrdate";
+	WHERE ENTDATE > "&_2YR";
 RUN;
 
 DATA BK2YRDROPS;
@@ -519,7 +519,7 @@ DATA TRWSTATUS_FL; /* FIND FROM 5 YEARS BACK */
 		KEEP = OWNBR SSNO1_RT7 ENTDATE TRWSTATUS);
 
 	*** VALUES RELATE TO FRAUD ----------------------------------- ***;
-	WHERE ENTDATE > "&_5yrdate" & TRWSTATUS NE "";
+	WHERE ENTDATE > "&_5YR" & TRWSTATUS NE "";
 RUN;
 
 DATA TRWSTATUS_FL; /* FLAG FOR BAD `TRW`S */
@@ -544,7 +544,7 @@ RUN;
 DATA PO_CODES_5YR;
 	SET dw.vw_loan(
 		KEEP = ENTDATE POCD SSNO1_RT7 OWNBR);
-	WHERE ENTDATE > "&_16monthsago" & 
+	WHERE ENTDATE > "&_16MO" & 
 		  POCD IN ("49", "61", "62", "63", "64", "66", "68", "97");
 RUN;
 
@@ -598,7 +598,7 @@ DATA DEFERMENTS;
 	SET dw.vw_payment(
 		KEEP = BRACCTNO TRDATE TRCD);
 	WHERE TRCD IN ("DF","D2","RV")& 
-		  TRDATE >= "&_120daysago"; /* 120 days back */
+		  TRDATE >= "&_120DAYS"; /* 120 days back */
 	DEFERMENT_FLAG = "X";
 RUN;
 
@@ -870,7 +870,7 @@ RUN;
 DATA ATB;
 	SET dw.atb_data(
 		KEEP = BRACCTNO AGE2 YEARMONTH 
-			WHERE = (YEARMONTH > "&_1yr1mo")); /* ENTER DATE RANGE */
+			WHERE = (YEARMONTH > "&_13MO")); /* ENTER DATE RANGE */
    ATBDT = INPUT(SUBSTR(YEARMONTH, 6, 2) || '/' || 
 		   SUBSTR(YEARMONTH, 9, 2) || '/' || 
 		   SUBSTR(YEARMONTH, 1, 4), mmddyy10.);
@@ -924,7 +924,7 @@ RUN;
 DATA ATB2;
 	SET ATB;
 
-	*** COUNT THE NUMBER OF 30-59s in the last year -------------- ***;
+	*** COUNT THE NUMBER OF 30-59s IN the last year -------------- ***;
 	LAST12 = SUM(RECENT6, FIRST6); 
 	LAST12_60 = SUM(RECENT6_60, FIRST6_60);
 RUN;
@@ -1014,7 +1014,7 @@ DATA MERGED_L_B2;
 	IF PMT_DAYS < 60 THEN LESSTHAN2_FLAG = "X";
 	IF PMT_DAYS = . & _9S < 10 THEN LESSTHAN2_FLAG = "";
 
-	*** pmt_days calculation wins over conprofile ---------------- ***;
+	*** pmt_days calculation wINs over conprofile ---------------- ***;
 	IF PMT_DAYS > 59 & _9S > 10 THEN LESSTHAN2_FLAG = "";
 	/*
 	IF OWNBR IN ("0568", "0575", "0521", "0558", "0563", "0504",
@@ -1039,7 +1039,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_Spring_2018\April_CAD_2018_flagged_04022018.txt' 
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_flagged_04022018.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1261,7 +1261,7 @@ RUN;
 
  PROC EXPORT
 	DATA = FINAL 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_Spring_2018\April_CAD_2018_final_04022018.txt' 
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_fINal_04022018.txt' 
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1270,27 +1270,27 @@ DATA WATERFALL;
 	INFILE DATALINES DLM = "," TRUNCOVER;
 	INPUT CRITERIA $ COUNT;
 	DATALINES;
-Final Open Total,			
-Delete customers in Bad Branches,	
-Delete customers with Missing Info,	
-Delete customers Outside of Footprint,	
-Delete where State/OwnSt Mismatch,
+FINal Open Total,			
+Delete customers IN Bad Branches,	
+Delete customers with MissINg INfo,	
+Delete customers Outside of FootprINt,	
+Delete where State/OWNST Mismatch,
 Delete Auto Loans,
 Delete Retail Loans,
 Delete if customer has multiple loans,
 Delete customers with a "bad" POCODE,
 Delete if deceased,
 Delete if Less than Two Payments Made,	
-Delete for ATB Delinquency,	
-Delete for Conprofile Delinquency,
+Delete for ATB DelINquency,	
+Delete for Conprofile DelINquency,
 Delete for Bankruptcy (5yr),
 Delete for Statflag (5yr),
 Delete for TRW Status (5yr),
 Delete if DNS or DNH,
-Delete if Delinquent Renewal,
+Delete if DelINquent Renewal,
 Delete if Not Current (ATB),
 Delete if No Available Cash,
-Delete if Deferment in last 120 days,
+Delete if Deferment IN last 120 days,
 ;/*Delete Harvey Deferrals*/
 RUN;
 
@@ -1338,7 +1338,7 @@ RUN;
 DATA _NULL_;
 	SET FINALMLA;
 	*** CHANGE DATE IN FILE NAME --------------------------------- ***;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-Input files TO WEBSITE\CAD_20180402.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20180402.txt";
 	PUT @1 "Social Security Number (SSN)"n
 		@10 "Date of Birth"n 
 		@ 18 "Last Name"n 
@@ -1434,7 +1434,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = FINALHH2 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_Spring_2018\April_CAD_2018_finalHH_04022018.txt' 
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_fINalHH_04022018.txt' 
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1493,14 +1493,14 @@ QUIT;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_Spring_2018\April_CAD_2018_FinalEC_04022018.txt'
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_FINalEC_04022018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\Marketing\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FinalEC_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC_04022018.xlsx' 
 	DBMS = EXCEL;
 RUN;
 
@@ -1511,13 +1511,13 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALEC2
-		OUTFILE = '\\rmc.local\dfsroot\Dept\Marketing\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FinalEC2_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC2_04022018.xlsx' 
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\Marketing\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FinalEC2_04022018.txt' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC2_04022018.txt' 
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1533,6 +1533,6 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALITA 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\Marketing\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FinalITA_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalITA_04022018.xlsx' 
 	DBMS = EXCEL;
 RUN;
