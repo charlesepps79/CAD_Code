@@ -1271,7 +1271,7 @@ DATA WATERFALL;
 	INFILE DATALINES DLM = "," TRUNCOVER;
 	INPUT CRITERIA $ COUNT;
 	DATALINES;
-FINal Open Total,			
+Final Open Total,			
 Delete customers IN Bad Branches,	
 Delete customers with MissINg INfo,	
 Delete customers Outside of FootprINt,	
