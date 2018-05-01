@@ -12,17 +12,17 @@
 DATA _NULL_;
 
 	CALL SYMPUT('_3YR', 
-				 '2015-04-02'); /* 3 YEARS PRIOR TO PULL */
+				 '2015-05-02'); /* 3 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_2YR', 
-				 '2016-04-02'); /* 2 YEARS PRIOR TO PULL */
+				 '2016-05-01'); /* 2 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_5YR',
-				 '2013-04-03'); /* 5 YEARS PRIOR TO PULL */
+				 '2013-05-02'); /* 5 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_16MO',
-				 '2016-12-02'); /* 16 MONTHS PRIOR TO PULL */
+				 '2016-12-30'); /* 16 MONTHS PRIOR TO PULL */
 	CALL SYMPUT('_120DAYS', 
-				 '2017-12-03'); /* 120 DAYS PRIOR TO PULL */
+				 '2018-01-01'); /* 120 DAYS PRIOR TO PULL */
 	CALL SYMPUT('_13MO', 
-				 '2017-03-02'); /* 13 MONTHS PRIOR TO PULL */
+				 '2017-03-31'); /* 13 MONTHS PRIOR TO PULL */
 RUN;
 
 *** READ IN DATA FROM `dw.vw_loan_NLS` TABLE. SUBSET FOR RELEVANT  ***;
@@ -751,19 +751,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-19-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-19-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-19-2018-06-27.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1039,7 +1039,8 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_flagged_04022018.txt' 
+	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_flagged_04022018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_flagged_05012018.txt'
 		DBMS = TAB;
 RUN;
 
@@ -1261,7 +1262,7 @@ RUN;
 
  PROC EXPORT
 	DATA = FINAL 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_fINal_04022018.txt' 
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_final_05012018.txt' 
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1338,7 +1339,7 @@ RUN;
 DATA _NULL_;
 	SET FINALMLA;
 	*** CHANGE DATE IN FILE NAME --------------------------------- ***;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20180402.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20180501.txt";
 	PUT @1 "Social Security Number (SSN)"n
 		@10 "Date of Birth"n 
 		@ 18 "Last Name"n 
@@ -1351,7 +1352,7 @@ DATA _NULL_;
 *** RUN AFTER RECEIVING RESULTS FROM MLA ------------------------- ***; 
 
 FILENAME MLA1
- "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_4_4_CAD_20180402.txt";
+ "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_4_4_CAD_20180501.txt";
 
 DATA MLA1;
 	INFILE MLA1;
@@ -1434,7 +1435,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = FINALHH2 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_fINalHH_04022018.txt' 
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_finalHH_05012018.txt' 
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1493,14 +1494,14 @@ QUIT;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_FINalEC_04022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_final_EC_05012018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC_05012018.xlsx' 
 	DBMS = EXCEL;
 RUN;
 
@@ -1511,13 +1512,13 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALEC2
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC2_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC2_05012018.xlsx' 
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalEC2_04022018.txt' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC2_05012018.txt' 
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1533,6 +1534,6 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALITA 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\April_CAD_2018_FINalITA_04022018.xlsx' 
+		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_ITA_05012018.xlsx' 
 	DBMS = EXCEL;
 RUN;
