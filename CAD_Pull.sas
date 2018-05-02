@@ -706,7 +706,9 @@ DATA MERGED_L_B2;
 	IF SSNO1 = "" THEN SSNO1 = SSNO;
 
 	*** IDENTIFY RETAIL LOANS ------------------------------------ ***;
-	IF CLASSTRANSLATION = "Retail" THEN RETAILDELETE_FLAG = "X";
+	IF CLASSTRANSLATION = "Retail" & 
+	   STATE IN ("NC", "OK") & 
+	   OWNST IN ("NC", "OK") THEN RETAILDELETE_FLAG = "X";
 
 	*** ID AUTO LOANS -------------------------------------------- ***;
 	IF CLASSTRANSLATION IN ("Auto-I", "Auto-D") 
