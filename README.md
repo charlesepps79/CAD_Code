@@ -1,1 +1,53 @@
 # CAD_Code
+
+Only select customers with one loan
+- dbo.vw_Loan/vw_Loan_NLS
+    - Enter Date before Today’s Date
+    - Open loan; no loan listed as Transfer
+    - No Charge off
+    - No Bankruptcy (Active or in past 2 years)
+    - Dedupe by SSNO1, Cifno, or SS7+First two digits of ownbr, depending on match.
+        - Dedupe BETWEEN these will occur at vendor after NCOA
+    - Delete customer with TrwStatus: AU, DA, DF (Look back 5 years)
+    - Keep STATFLAGS in  (0, 8, T, t, M, E) (look back 3 years)
+    - Keep Solicit = Y
+    - Keep Confidential = N
+    - Keep CeaseandDesist = N
+    - Keep customers who made at least 2 payments
+    - Keep customers residing in same state as their listed branch state
+    - Delinquency:
+        - Current Only (as of most recent month end file; ATB used only)
+        - 0x30 last 6-months (ATB and Conprofile)
+        - 2x30 last 12-month (ATB and Conprofile)
+        - No 60+ in last 12-months (ATB and Conprofile)
+        - Exclude if current loan was Delinquent Renewal  (Purpose code = 11 or 20)
+        - No deferments last 120-days  
+        - No special disaster deferments (non-blanket. Refno: DISDF)
+    - Delete NC and OK Retail    
+    - Delete customers with a "bad" POCODE   (In PB-PQ criteria today)
+        - 149, 61, 62, 63, 64, 66, 68, 97, 21, 94, 95
+    - Exclude Auto-I & Auto –D (All Auto)
+    - Have available cash according to XNO_availcredit (>0)
+- Preapproved Offer Recipients:
+    - Existing loan is small loan / convenience check /retail (not in OK or NC) 
+        - (Classtranslation = Small/Checks/Retail)
+    - XNO_AvailCredit >100
+    - No Heavy Harvey
+- ITA Offer Recipients;
+    - XNO_AvailCredit <100
+    - Classtranslation = Small/Checks/Retail
+    - All existing large loans
+    - Allow all Harvey zips
+
+1POCD Definitions:
+- 49 = Bankruptcy
+- 61 = Voluntary Surrender
+- 62 = Pd Collection Acct
+- 63 = Pd Repo
+- 64 = Pd Charge off
+- 66 = Repo Pd by Dealer
+- 68 = Pd less than balance 
+- 97 = Non-file pay off
+- 21 = Deceased
+- 94 = Pd AH Insurance
+- 95 = Pd Life Insurance
