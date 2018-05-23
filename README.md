@@ -18,26 +18,27 @@ Only select customers with one loan
     - Delinquency:
         - Current Only (as of most recent month end file; ATB used only)
         - 0x30 last 6-months (ATB and Conprofile)
+            - consider 1x30 within 4-6 months for ITA
         - 2x30 last 12-month (ATB and Conprofile)
         - No 60+ in last 12-months (ATB and Conprofile)
         - Exclude if current loan was Delinquent Renewal  (Purpose code = 11 or 20)
         - No deferments last 120-days  
         - No special disaster deferments (non-blanket. Refno: DISDF)
+        - Consider time frame on disaster deferments
     - Delete NC and OK Retail    
     - Delete customers with a "bad" POCODE   (In PB-PQ criteria today)
-        - 149, 61, 62, 63, 64, 66, 68, 97, 21, 94, 95
+        - 49, 61, 62, 63, 64, 66, 68, 97, 21, 94, 95
     - Exclude Auto-I & Auto –D (All Auto)
+        - consider keeping for ITA
     - Have available cash according to XNO_availcredit (>0)
 - Preapproved Offer Recipients:
-    - Existing loan is small loan / convenience check /retail (not in OK or NC) 
-        - (Classtranslation = Small/Checks/Retail)
+    - Existing loan is small loan / convenience check
+        - (Classtranslation = Small/Checks)
     - XNO_AvailCredit >100
-    - No Heavy Harvey
 - ITA Offer Recipients;
     - XNO_AvailCredit <100
-    - Classtranslation = Small/Checks/Retail
+    - Classtranslation = Small/Checks
     - All existing large loans
-    - Allow all Harvey zips
 
 1POCD Definitions:
 - 49 = Bankruptcy
