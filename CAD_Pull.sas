@@ -1,3 +1,11 @@
+﻿/*
+%let todaysDate = %sysfunc(today(), yymmddd10.);
+%put &todaysDate;
+
+%let _3YR = %sysfunc(&todaysDate-(365*3), yymmddd10.);
+%put &_3YR;
+*/
+
 **********************************************************************;
 *** CHANGE DATES IN THE LINES IMMEDIATELY BELOW ALONG WITH FILE    ***;
 *** PATHS. FOR THE FILES PATHS, YOU WILL LIKELY NEED TO CREATE A   ***;
@@ -12,17 +20,17 @@
 DATA _NULL_;
 
 	CALL SYMPUT('_3YR', 
-				 '2015-05-02'); /* 3 YEARS PRIOR TO PULL */
+				 '2015-06-09'); /* 3 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_2YR', 
-				 '2016-05-01'); /* 2 YEARS PRIOR TO PULL */
+				 '2016-06-08'); /* 2 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_5YR',
-				 '2013-05-02'); /* 5 YEARS PRIOR TO PULL */
+				 '2013-06-09'); /* 5 YEARS PRIOR TO PULL */
 	CALL SYMPUT('_16MO',
-				 '2016-12-30'); /* 16 MONTHS PRIOR TO PULL */
+				 '2017-02-06'); /* 16 MONTHS PRIOR TO PULL */
 	CALL SYMPUT('_120DAYS', 
-				 '2018-01-01'); /* 120 DAYS PRIOR TO PULL */
+				 '2018-02-08'); /* 120 DAYS PRIOR TO PULL */
 	CALL SYMPUT('_13MO', 
-				 '2017-03-31'); /* 13 MONTHS PRIOR TO PULL */
+				 '2017-05-08'); /* 13 MONTHS PRIOR TO PULL */
 RUN;
 
 *** READ IN DATA FROM `dw.vw_loan_NLS` TABLE. SUBSET FOR RELEVANT  ***;
@@ -751,19 +759,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-07-2018-06-28.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-07-2018-06-28.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-26-2018-06-27.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-07-2018-06-28.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1027,9 +1035,9 @@ DATA MERGED_L_B2;
 	IF HARVEYZIP = "X" THEN OFFER_TYPE = "ITA";
 	*/
 	IF XNO_AVAILCREDIT IN (., 0) THEN OFFER_TYPE = "No Available Cash";
-	IF OFFER_TYPE = "ITA" THEN DROPDATE = "2018-05-09";
-	IF OFFER_TYPE = "Preapproved" THEN DROPDATE = "2018-05-09";
-	EXPIRATIONDATE = "2018-05-31";
+	IF OFFER_TYPE = "ITA" THEN DROPDATE = "2018-07-20";
+	IF OFFER_TYPE = "Preapproved" THEN DROPDATE = "2018-07-20";
+	EXPIRATIONDATE = "2018-08-31";
 RUN;
 
 PROC SORT
@@ -1039,8 +1047,8 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_SprINg_2018\April_CAD_2018_flagged_04022018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_flagged_05012018.txt'
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_flagged_06082018.txt'
+	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_flagged_05012018.txt' */
 		DBMS = TAB;
 RUN;
 
@@ -1252,7 +1260,7 @@ RUN;
 
 DATA FINAL;
 	SET FINAL;
-	CAMPAIGN_ID="CAD5.0_2018";
+	CAMPAIGN_ID="BTS8.0_2018";
 RUN;
 
 PROC SORT
@@ -1262,7 +1270,7 @@ RUN;
 
  PROC EXPORT
 	DATA = FINAL 
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_final_05012018.txt' 
+		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' 
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1339,7 +1347,7 @@ RUN;
 DATA _NULL_;
 	SET FINALMLA;
 	*** CHANGE DATE IN FILE NAME --------------------------------- ***;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20180501.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\BTS_20180608.txt";
 	PUT @1 "Social Security Number (SSN)"n
 		@10 "Date of Birth"n 
 		@ 18 "Last Name"n 
