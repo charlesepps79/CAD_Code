@@ -626,62 +626,10 @@ DATA MERGED_L_B2;
 	IF x;
 RUN;
 
-/*
-DATA HARVEY;
-	SET dw.vw_payment(
-		KEEP = BRACCTNO TRDATE TRCD REFNO);
-	WHERE TRCD = "DF" & 
-		  REFNO = "DISDF" & 
-		  TRDATE > "2017-01-01";
-	HARVEYDEFER = "X";
-RUN;
-*/;
-
-/*
-PROC SORT 
-	DATA = HARVEY OUT = HARVEY2 NODUPKEY;
-	BY BRACCTNO;
-RUN;
-*/;
-
 PROC SORT 
 	DATA = MERGED_L_B2;
 	BY BRACCTNO;
 RUN;
-
-/*
-DATA MERGED_L_B2;
-	MERGE MERGED_L_B2(IN = x) HARVEY2;
-	BY BRACCTNO;
-	IF x;
-RUN;
-*/;
-
-/*
-*** DATA FROM NLSDEV --------------------------------------------- ***;
-DATA NEW_XNOAVAILCREDITDATA;
-	SET WORK.'CAD Data for Jessica 171101'n;
-	RENAME 'Loan Number'n = BRACCTNO 
-		   'Available Credit'n = NEW_XNOAVAILCREDIT;
-RUN;
-
-PROC SORT 
-	DATA = NEW_XNOAVAILCREDITDATA;
-	BY BRACCTNO;
-RUN;
-
-DATA MERGED_L_B2_NEWXNO;
-	MERGE MERGED_L_B2 (IN = x) NEW_XNOAVAILCREDITDATA;
-	BY BRACCTNO;
-	IF x;
-RUN;
-
-DATA MERGED_L_B2;
-	SET MERGED_L_B2_NEWXNO;
-	IF NEW_XNOAVAILCREDIT NE . 
-		THEN XNO_AVAILCREDIT = NEW_XNOAVAILCREDIT;
-RUN;
-*/;
 
 *** BAD BRANCH FLAGS --------------------------------------------- ***;
 DATA MERGED_L_B2;
@@ -718,7 +666,7 @@ DATA MERGED_L_B2;
 
 	*** ID AUTO LOANS -------------------------------------------- ***;
 	IF CLASSTRANSLATION IN ("Auto-I", "Auto-D") 
-		THEN AUTODELETE_FLAG = "X";
+		THEN OFFER_TYPE = "ITA";
 
 	IF CURBAL < 50 THEN CURBAL_FLAG = "X";
 	IF PURCD IN ("011", "020") THEN DLQREN_FLAG = "X";
@@ -737,6 +685,9 @@ DATA MERGED_L_B2;
 		THEN OFFER_AMOUNT = XNO_AVAILCREDIT;
 	IF XNO_AVAILCREDIT > 2500 THEN OFFER_AMOUNT = 1000;
 	IF CLASSTRANSLATION = "Large" & XNO_AVAILCREDIT NOT IN (.,0) 
+		THEN OFFER_TYPE = "ITA";
+	*** ID AUTO LOANS -------------------------------------------- ***;
+	IF CLASSTRANSLATION IN ("Auto-I", "Auto-D") 
 		THEN OFFER_TYPE = "ITA";
 	IF OWNBR = "0251" THEN OWNBR = "0580";
 	IF OWNBR = "0252" THEN OWNBR = "0683";
@@ -989,7 +940,8 @@ RUN;
 
 DATA MERGED_L_B2; /* FLAG FOR BAD DLQ */
 	SET MERGED_L_B2;
-	IF RECENT6 > 0 OR LAST12 > 2 OR LAST12_60 > 0 THEN DLQ_FLAG = "X";
+	IF RECENT3 > 0 OR RECENT6 >= 1 OR LAST12 > 2 OR LAST12_60 > 0 THEN 
+		DLQ_FLAG = "X";
 	IF DELQ1 NOT IN (1, .) THEN CURRENTLY_DELQ = "X";
 RUN;
 
@@ -1024,16 +976,6 @@ DATA MERGED_L_B2;
 
 	*** pmt_days calculation wINs over conprofile ---------------- ***;
 	IF PMT_DAYS > 59 & _9S > 10 THEN LESSTHAN2_FLAG = "";
-	/*
-	IF OWNBR IN ("0568", "0575", "0521", "0558", "0563", "0504",
-				 "0537", "0540", "0533", "0534", "0539", "0541",
-				 "0560", "0566", "0581", "0570", "0598", "0561",
-				 "0578", "0567", "0535", "0557", "0549", "0551",
-				 "0576", "0536", "0559") THEN HARVEYZIP = "X";
-	*/
-	/*
-	IF HARVEYZIP = "X" THEN OFFER_TYPE = "ITA";
-	*/
 	IF XNO_AVAILCREDIT IN (., 0) THEN OFFER_TYPE = "No Available Cash";
 	IF OFFER_TYPE = "ITA" THEN DROPDATE = "2018-07-20";
 	IF OFFER_TYPE = "Preapproved" THEN DROPDATE = "2018-07-20";
@@ -1047,8 +989,8 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_flagged_06082018.txt'
-	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_flagged_05012018.txt' */
+	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_flagged_06082018.txt' */
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_BTS_2018_flagged_06082018.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1241,19 +1183,6 @@ PROC SQL;
 	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
 QUIT;
 
-/*
-DATA FINAL; 
-	SET FINAL; 
-	IF HARVEYDEFER = ""; 
-RUN;
-*/
-
-/*
-PROC SQL; 
-	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
-QUIT;
-*/;	
-	
 PROC PRINT 
 	DATA = COUNT NOOBS;
 RUN;
@@ -1270,11 +1199,12 @@ RUN;
 
  PROC EXPORT
 	DATA = FINAL 
-		OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' 
+	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_BTS_2018_final_06082018.txt'
 		REPLACE DBMS = TAB;
  RUN;
 
-DATA WATERFALL;
+ DATA WATERFALL;
 	LENGTH CRITERIA $50 COUNT 8.;
 	INFILE DATALINES DLM = "," TRUNCOVER;
 	INPUT CRITERIA $ COUNT;
@@ -1443,7 +1373,8 @@ RUN;
 
 PROC EXPORT 
 	DATA = FINALHH2 
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_finalHH_05012018.txt' 
+	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_finalHH_06082018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1502,14 +1433,16 @@ QUIT;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\May_CAD_2018_final_EC_05012018.txt'
+	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC_06082018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC_05012018.xlsx' 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC_06082018.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -1520,13 +1453,15 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALEC2
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC2_05012018.xlsx' 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC2_06082018.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_EC2_05012018.txt' 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC2_06082018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1542,6 +1477,11 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALITA 
-		OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\May_CAD_2018_final_ITA_05012018.xlsx' 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_ITA_06082018.xlsx'
 	DBMS = EXCEL;
 RUN;
+
+
+
+
