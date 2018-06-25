@@ -635,6 +635,10 @@ RUN;
 DATA MERGED_L_B2;
 	LENGTH OFFER_TYPE $20;
 	SET MERGED_L_B2;
+	DOB_NUM = input(DOB, 8.);
+	DOB_DATE = input(put(DOB_NUM,best8.),yymmdd8.);
+  	format DOB_DATE date9.;
+	age = int((today()-DOB_DATE)/365.25);
 	IF OWNBR IN ("600", "9000", "198", "1", "0001", "0198", "0600") 
 		THEN BADBRANCH_FLAG = "X";
 	IF SUBSTR(OWNBR, 3, 2) = "99" THEN BADBRANCH_FLAG = "X";
@@ -690,6 +694,9 @@ DATA MERGED_L_B2;
 	*** ID AUTO LOANS -------------------------------------------- ***;
 	IF CLASSTRANSLATION IN ("Auto-I", "Auto-D") 
 		THEN OFFER_TYPE = "ITA";
+	IF AGE < 29 THEN AGE_RANGE_FLAG = "X";
+	IF AGE > 60 THEN AGE_RANGE_FLAG = "X";
+	IF DOB_DATE = . THEN AGE_RANGE_FLAG = "";
 	IF OWNBR = "0251" THEN OWNBR = "0580";
 	IF OWNBR = "0252" THEN OWNBR = "0683";
 	IF OWNBR = "0253" THEN OWNBR = "0581";
@@ -985,7 +992,7 @@ RUN;
 
 data MERGED_L_B2;
 	set MERGED_L_B2;
-	if xno_availcredit > curbal * 0.10 then NTB_ITA = "NTB_ITA";
+	if xno_availcredit > curbal * 0.10 and classtranslation = "Large" then NTB_ITA = "NTB_ITA";
 	else NTB_ITA = "ITA";
 run;
 
@@ -1434,7 +1441,7 @@ PROC SQL;
 	SELECT BRACCTNO, OWNBR, CLASSTRANSLATION, SSNO1_RT7, CIFNO,
 		   FIRSTNAME, MIDDLENAME, LASTNAME, ADR1, ADR2, CITY, STATE,
 		   ZIP, DOB, OFFER_TYPE, OFFER_AMOUNT, CAMPAIGN_ID, DROPDATE,
-		   EXPIRATIONDATE, VND_DROP, VND_DUP, NTB_ITA
+		   EXPIRATIONDATE, VND_DROP, VND_DUP, NTB_ITA, AGE_RANGE_FLAG
 	FROM FINALHH2;
 QUIT;
 
