@@ -994,6 +994,8 @@ data MERGED_L_B2;
 	set MERGED_L_B2;
 	if xno_availcredit > curbal * 0.10 and classtranslation = "Large" then NTB_ITA = "NTB_ITA";
 	else NTB_ITA = "ITA";
+	if xno_availcredit > curbal * 0.10 and classtranslation = "Auto-I" then NTB_ITA = "NTB_ITA";
+	if xno_availcredit > curbal * 0.10 and classtranslation = "Auto-D" then NTB_ITA = "NTB_ITA";
 run;
 
 PROC SORT
