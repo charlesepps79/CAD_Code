@@ -718,19 +718,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-14-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-21-2018-06-27.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-14-2018-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-21-2018-06-27.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-14-2018-06-27.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-21-2018-06-27.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -996,6 +996,9 @@ data MERGED_L_B2;
 	else NTB_ITA = "ITA";
 	if xno_availcredit > curbal * 0.10 and classtranslation = "Auto-I" then NTB_ITA = "NTB_ITA";
 	if xno_availcredit > curbal * 0.10 and classtranslation = "Auto-D" then NTB_ITA = "NTB_ITA";
+	IF NTB_ITA = "NTB_ITA" THEN OFFER_AMOUNT = xno_availcredit * 0.6;
+	IF NTB_ITA = "NTB_ITA" AND xno_availcredit * 0.6 < 500 THEN OFFER_AMOUNT = 500;
+	IF NTB_ITA = "NTB_ITA" AND xno_availcredit * 0.6 > 7000 THEN OFFER_AMOUNT = 7000;
 run;
 
 PROC SORT
