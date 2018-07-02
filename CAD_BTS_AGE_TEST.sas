@@ -1,7 +1,7 @@
 %LET FINAL_EC2_IMPORT = 
-"\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC2_06182018.txt";
+"\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC2_07022018.txt";
 %LET FINAL_EXPORT_EC2 = 
-"\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC2_06182018_TEST.txt";
+"\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC2_07022018_TEST.txt";
 
 DATA FINALEC2_TEST;
 	SET FINALEC2;
@@ -55,6 +55,6 @@ RUN;
 
 PROC EXPORT
 	DATA = FINALEC2_TEST
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\06_2018\August_CAD_BTS_2018_final_EC2_06182018_TEST.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC2_07022018_TEST.xlsx'
 		DBMS = EXCEL;
 RUN;
