@@ -686,9 +686,9 @@ DATA MERGED_L_B2;
 		THEN OFFER_AMOUNT = XNO_AVAILCREDIT;
 	IF XNO_AVAILCREDIT > 1000 & CLASSTRANSLATION IN ("Small", "Checks") 
 		THEN OFFER_AMOUNT = 1000;
-	IF 0 < XNO_AVAILCREDIT <= 2500 & CLASSTRANSLATION = "Large" 
+	IF 0 < XNO_AVAILCREDIT <= 2300 & CLASSTRANSLATION = "Large" 
 		THEN OFFER_AMOUNT = XNO_AVAILCREDIT;
-	IF XNO_AVAILCREDIT > 2500 THEN OFFER_AMOUNT = 1000;
+	IF XNO_AVAILCREDIT > 2300 THEN OFFER_AMOUNT = 2300;
 	IF CLASSTRANSLATION = "Large" & XNO_AVAILCREDIT NOT IN (.,0) 
 		THEN OFFER_TYPE = "ITA";
 	*** ID AUTO LOANS -------------------------------------------- ***;
@@ -717,19 +717,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-28-2018-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-06-2018-06-27.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-28-2018-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-06-2018-06-27.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-06-28-2018-06-28.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-06-2018-06-27.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1008,7 +1008,7 @@ RUN;
 PROC EXPORT 
 	DATA = DEDUPED 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_flagged_06082018.txt' */
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_BTS_2018_flagged_07022018.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_2018_flagged_09122018.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1218,7 +1218,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_BTS_2018_final_07022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_2018_final_09122018.txt'
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1295,7 +1295,7 @@ RUN;
 DATA _NULL_;
 	SET FINALMLA;
 	*** CHANGE DATE IN FILE NAME --------------------------------- ***;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\BTS_20180702.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20180912.txt";
 	PUT @1 "Social Security Number (SSN)"n
 		@10 "Date of Birth"n 
 		@ 18 "Last Name"n 
@@ -1308,7 +1308,7 @@ DATA _NULL_;
 *** RUN AFTER RECEIVING RESULTS FROM MLA ------------------------- ***; 
 
 FILENAME MLA1
- "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_4_5_BTS_20180702.txt";
+ "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_4_6_CAD_20180912.txt";
 
 DATA MLA1;
 	INFILE MLA1;
@@ -1392,7 +1392,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_finalHH_07022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_finalHH_09122018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1452,7 +1452,7 @@ QUIT;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC_07022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_EC_09122018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1460,7 +1460,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC_07022018.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_EC_09122018.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -1472,14 +1472,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC2_07022018.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_EC2_09122018.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_EC2_07022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_EC2_09122018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1496,14 +1496,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALNTBITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_NTB_ITA_07022018.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_NTB_ITA_09122018.xlsx'
 	DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALNTBITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_NTB_ITA_07022018.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\November_CAD_BTS_2018_final_NTB_ITA_09122018.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1520,7 +1520,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\07_2018\August_CAD_BTS_2018_final_ITA_07022018.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2018\August_CAD_BTS_2018_final_ITA_09122018.xlsx'
 	DBMS = EXCEL;
 RUN;
 
