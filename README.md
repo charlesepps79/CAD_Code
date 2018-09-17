@@ -36,6 +36,13 @@ Only select customers with one loan
         - (Classtranslation = Small/Checks)
     - XNO_AvailCredit >100
     - capped at $2,300
+- NTB/ITA Offer Recipients
+    - xno_availcredit > curbal * 0.10 and classtranslation = "Large"
+    - xno_availcredit > curbal * 0.10 and classtranslation = "Auto-I"
+    - xno_availcredit > curbal * 0.10 and classtranslation = "Auto-D"
+    - xno_availcredit * 0.6 < 500 THEN OFFER_AMOUNT = 500
+    - xno_availcredit * 0.6 > 7000 THEN OFFER_AMOUNT = 7000
+    - else OFFER_AMOUNT = xno_availcredit * 0.6
 - ITA Offer Recipients;
     - XNO_AvailCredit <100
     - Classtranslation = Small/Checks
