@@ -35,6 +35,7 @@ Only select customers with one loan
     - Existing loan is small loan / convenience check
         - (Classtranslation = Small/Checks)
     - XNO_AvailCredit >100
+    - capped at $2,300
 - ITA Offer Recipients;
     - XNO_AvailCredit <100
     - Classtranslation = Small/Checks
