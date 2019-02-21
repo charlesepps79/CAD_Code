@@ -3,7 +3,7 @@
 Only select customers with one loan
 - dbo.vw_Loan/vw_Loan_NLS
     - Enter Date before Today’s Date
-    - Open loan; no loan listed as Transfer
+    - Open loan; no loan listed as Transfer (drop records coded BT in POCD field)
     - No Charge off
     - No Bankruptcy (Active or in past 2 years)
     - Dedupe by SSNO1, Cifno, or SS7+First two digits of ownbr, depending on match.
@@ -18,23 +18,23 @@ Only select customers with one loan
     - Delinquency:
         - Current Only (as of most recent month end file; ATB used only)
         - 0x30 last 6-months (ATB and Conprofile)
-            - consider 1x30 within 4-6 months for ITA
+        - 1x30 within 4-6 months for ITA
         - 2x30 last 12-month (ATB and Conprofile)
         - No 60+ in last 12-months (ATB and Conprofile)
         - Exclude if current loan was Delinquent Renewal  (Purpose code = 11 or 20)
         - No deferments last 120-days  
         - No special disaster deferments (non-blanket. Refno: DISDF)
         - Consider time frame on disaster deferments
-    - Delete NC and OK Retail    
+    - Delete Retail    
     - Delete customers with a "bad" POCODE   (In PB-PQ criteria today)
         - 49, 61, 62, 63, 64, 66, 68, 97, 21, 94, 95
     - Exclude Auto-I & Auto –D (All Auto)
-        - consider keeping for ITA
+        - Keep Auto-I & Auto –D for NTB_ITA
     - Have available cash according to XNO_availcredit (>0)
 - Preapproved Offer Recipients:
     - Existing loan is small loan / convenience check
         - (Classtranslation = Small/Checks)
-    - XNO_AvailCredit >100
+    - XNO_AvailCredit >= 100
     - capped at $2,300
 - NTB/ITA Offer Recipients
     - xno_availcredit > curbal * 0.10 and classtranslation = "Large"
