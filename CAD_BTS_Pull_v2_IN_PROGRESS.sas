@@ -32,7 +32,7 @@ OPTIONS MPRINT MLOGIC SYMBOLGEN; /* SET DEBUGGING OPTIONS */
 
 %LET _13MO_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-395);
 %LET _13MO = %SYSFUNC(putn(&_13MO_NUM,yymmdd10.));
-%PUT "&_16MO";
+%PUT "&_13MO";
 
 %LET _120DAYS_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-120);
 %LET _120DAYS = %SYSFUNC(putn(&_120DAYS_NUM,yymmdd10.));
