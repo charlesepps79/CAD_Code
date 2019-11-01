@@ -64,7 +64,7 @@ DATA LOAN1;
 		       XNO_TRUEDUEDATE FIRSTPYDATE SRCD POCD POFFDATE PLCD 
 			   PLDATE PLAMT BNKRPTDATE BNKRPTCHAPTER DATEPAIDLAST 
 			   APRATE CRSCORE NETLOANAMOUNT XNO_AVAILCREDIT 
-			   XNO_TDUEPOFF CURBAL CONPROFILE1 Acctrefno);
+			   XNO_TDUEPOFF CURBAL CONPROFILE1 Acctrefno XNO_TDueTBal);
 
 	*** FILTER DATA. REMOVE NULLS FROM `CIFNO`. KEEP ONLY NULLS    ***;
 	*** FROM `POCD`. KEEP ONLY NULLS FROM `PLCD`. KEEP ONLY NULLS  ***;
@@ -94,7 +94,7 @@ DATA BORRNLS;
 	LENGTH FIRSTNAME $20 MIDDLENAME $20 LASTNAME $30;
 
 	*** SUBSET `dw.vw_borrower_nls` USING RELEVANT VARIABLES ----- ***;
-	SET dw.vw_borrower(
+	SET dw.borrower(
 		KEEP = CIFNO SSNO SSNO_RT7 FNAME LNAME ADR1 ADR2 CITY STATE ZIP 
 			   BRNO AGE CONFIDENTIAL SOLICIT CEASEANDDESIST CREDITSCORE
 			   RMC_UPDATED);
@@ -199,7 +199,7 @@ DATA LOANEXTRA;
 			   XNO_TRUEDUEDATE FIRSTPYDATE SRCD POCD POFFDATE PLCD 
 			   PLDATE PLAMT BNKRPTDATE BNKRPTCHAPTER DATEPAIDLAST 
 			   APRATE CRSCORE NETLOANAMOUNT XNO_AVAILCREDIT 
-			   XNO_TDUEPOFF CURBAL CONPROFILE1);
+			   XNO_TDUEPOFF CURBAL CONPROFILE1 XNO_TDueTBal);
 
 	*** CONCATENATE `SSNO1_RT7` WITH THE FIRST 2 NUMBERS IN `OWNBR`***; 
 	*** AND STORE IN NEW VARIABLE, `SS7BRSTATE` ------------------ ***;
@@ -260,7 +260,7 @@ DATA LOANPARADATA;
 			   XNO_TRUEDUEDATE FIRSTPYDATE SRCD POCD POFFDATE PLCD
 			   PLDATE PLAMT BNKRPTDATE BNKRPTCHAPTER DATEPAIDLAST
 			   APRATE CRSCORE NETLOANAMOUNT XNO_AVAILCREDIT 
-			   XNO_TDUEPOFF CURBAL CONPROFILE1);
+			   XNO_TDUEPOFF CURBAL CONPROFILE1 XNO_TDueTBal);
 
 	*** FILTER `PLCD`S THAT ARE NULL, `POCD`S THAT ARE NULL,       ***;
 	*** `POFFDATE`S THAT ARE NULL, `PLDATE`S THAT ARE NULL, AND    ***;
@@ -297,7 +297,7 @@ DATA BORRPARADATA;
 	LENGTH FIRSTNAME $20 MIDDLENAME $20 LASTNAME $30;
 	
 	*** SUBSET `dw.vw_borrower` USING RELEVANT VARIABLES --------- ***;
-	SET dw.vw_borrower (
+	SET dw.borrower (
 		KEEP = RMC_UPDATED CIFNO SSNO SSNO_RT7 FNAME LNAME ADR1 ADR2
 			   CITY STATE ZIP BRNO AGE CONFIDENTIAL SOLICIT
 			   CEASEANDDESIST CREDITSCORE);
@@ -661,7 +661,7 @@ RUN;
 
 *** DEFERMENTS --------------------------------------------------- ***;
 DATA DEFERMENTS;
-	SET dw.vw_payment(
+	SET dw.payment(
 		KEEP = BRACCTNO TRDATE TRCD);
 	WHERE TRDATE >= "&_90DAYS"; /* 120 days back */
 	IF TRCD IN ("DF","D2","RV") THEN DEFERMENT_FLAG = "X";
@@ -730,11 +730,46 @@ PROC SORT
 	BY BRACCTNO;
 RUN;
 
-DATA MERGED_L_B2;
+DATA MERGED_L_B2_B;
 	MERGE MERGED_L_B2(IN = x) DEFERMENTS2;
 	BY BRACCTNO;
 	IF x;
 RUN;
+
+**********************************************************************;
+**********************************************************************;
+**********************************************************************;
+data partial_chgoffs;
+	set '\\rmc.local\dfsroot\Dept\Marketing\Analytics\SNAPSHOTS\partial_chgoffs.sas7bdat';
+run;
+
+DATA partial_chgoffs;
+	SET partial_chgoffs(
+		KEEP = BRACCTNO CIFNO);
+	CIFNUM = input(CIFNO, 10.);
+    drop CIFNO;
+   	rename CIFNUM=CIFNO;
+	PARTCHGOFFS_FLAG = "X";
+RUN;
+
+PROC SORT 
+	DATA = partial_chgoffs;
+	BY CIFNO;
+RUN;
+
+PROC SORT 
+	DATA = MERGED_L_B2_B;
+	BY CIFNO;
+RUN;
+
+DATA MERGED_L_B2_A;
+	MERGE MERGED_L_B2_B(IN = x) partial_chgoffs;
+	BY CIFNO;
+	IF x;
+RUN;
+**********************************************************************;
+**********************************************************************;
+**********************************************************************;
 
 **********************************************************************;
 DATA loanacct_detail;
@@ -756,14 +791,16 @@ PROC SORT
 RUN;
 
 PROC SORT 
-	DATA = MERGED_L_B2;
+	DATA = MERGED_L_B2_A;
 	BY acctrefno;
 RUN;
 
 DATA MERGED_L_B2;
-	MERGE MERGED_L_B2(IN = x) loanacct_detail;
+	MERGE MERGED_L_B2_A(IN = x) loanacct_detail;
 	BY acctrefno;
 	IF x;
+	*Payoff_Amount = XNO_TDueTBal;
+	*Available_Credit = XNO_AvailCredit;
 RUN;
 
 PROC SORT 
@@ -780,7 +817,7 @@ DATA MERGED_L_B2;
   	format DOB_DATE date9.;
 	age = int((today()-DOB_DATE)/365.25);
 	IF OWNBR IN ("1", "0001", "198", "0198", "398", "0398", "498", 
-				 "0498", "580", "0580", "600", "0600", "698", "0698", 
+				 "0498", "600", "0600", "698", "0698", 
 				 "898", "0898", "9000", "9000") 
 		THEN BADBRANCH_FLAG = "X";
 	IF SUBSTR(OWNBR, 3, 2) = "99" THEN BADBRANCH_FLAG = "X";
@@ -810,9 +847,14 @@ DATA MERGED_L_B2;
 
 	*** IDENTIFY RETAIL LOANS ------------------------------------ ***;
 	IF CLASSTRANSLATION = "Retail" THEN RETAILDELETE_FLAG = "X";
+	IF CLASSTRANSLATION IN ('Auto-I' 'Auto-D')
+		THEN AUTODELETE_FLAG = "X";
 
 	IF Payoff_Amount < 50 THEN CURBAL_FLAG = "X";
 	IF PURCD IN ("011", "015", "020") THEN DLQREN_FLAG = "X";
+	IF APRate < 21 and
+	   classtranslation IN ('Small' 'Large')
+		THEN DLQREN_FLAG = "X";
 	IF Available_Credit = . THEN XNO_MISSING = 1;
 		ELSE XNO_MISSING = 0;
 	if brno = "0668" then brno = "0680";
@@ -840,19 +882,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-26-2019-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-26-2019-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-09-26-2019-06-28.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -959,7 +1001,7 @@ PROC FORMAT; /* DEFINE FORMAT FOR DELQ */
 RUN;
 
 DATA ATB_data;
-	SET dw.vw_ATB_Data(
+	SET dw.ATB_Data(
 		KEEP = BRACCTNO NetBal);
 RUN;
 
@@ -1219,147 +1261,147 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_flagged_10032019.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_flagged_10292019.txt' 
 		DBMS = TAB;
 RUN;
 
-DATA FINALL_OFFERS;
+**********************************************************************;
+**************************** TEST ************************************;
+**********************************************************************;
+DATA FINALL_OFFERS_PREP;
 	SET DEDUPED;
 	pr_offer = "";
 	sl_pq_offer = "";
 	ll_pq_offer = "";
-	pr_amount = .;
-	sl_pq_amount = .;
-	ll_pq_amount = .;
-*** small loan preapproved criteria ------------------------------ ***;
-	IF classtranslation = "Small" and
-	   Available_Credit > Payoff_Amount * 0.10 and
-	   Available_Credit >= 100 and
-	   _9S <= 8 and
-	   Payoff_Amount > 50
-		then pr_offer = "X";
-	IF classtranslation = "Checks" and
-	   Available_Credit > Payoff_Amount * 0.10 and
-	   Available_Credit >= 100 and
-	   Payoff_Amount > 50
-		then pr_offer = "X";
-	IF classtranslation IN("Small" "Checks") and 
-	   RECENT4TO6 > 0 
-		then pr_offer = "";
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   Payoff_Amount <= 2300 
-		then pr_amount = available_credit;
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   Payoff_Amount > 2300 
-		then pr_amount = Original_Proceeds - 2300;
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   ownst = "AL" and
-	   1500 <= pr_amount + Payoff_Amount <= 2000
-	   	then pr_amount = 1400 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   ownst = "GA" and
-	   1500 <= pr_amount + Payoff_Amount <= 3000
-	   	then pr_amount = 1400 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   ownst = "OK" and
-	   1500 <= pr_amount + Payoff_Amount <= 2500
-	   	then pr_amount = 1400 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   pr_offer = "X" and
-	   ownst = "TX" and
-	   1400 <= pr_amount + Payoff_Amount <= 2500
-	   	then pr_amount = 1300 - Payoff_Amount;
-	IF pr_amount < 100 THEN pr_amount = .;
-	IF pr_amount > 1000 THEN pr_amount = 1000;
+	pr_amount = 0;
+	sl_pq_amount = 0;
+	ll_pq_amount = 0;
+	IF Available_Credit > Payoff_Amount * 0.10
+		THEN availcredit_curbal_test = "X";
+	IF Available_Credit >= 100
+		THEN availcredit_test = "X";
+	IF Payoff_Amount > 50
+		THEN curbal_test = "X";
+	IF recent4to6 = .
+		THEN recent4to6 = 0;
+	IF largeapprovedamount = .
+		THEN largeapprovedamount = 0;
+RUN;
 
-*** small loan prequalified offer criteria ***;
-	IF classtranslation = "Small" and
-	   _9S <= 8 and
-	   Available_Credit >= 100 and
-	   Payoff_Amount > 50
-	   	then sl_pq_offer = "X";
-	IF classtranslation = "Checks" and
-	   Available_Credit >= 100 and
-	   Payoff_Amount > 50
+DATA FINALL_OFFERS_PR;
+	SET FINALL_OFFERS_PREP;
+	IF classtranslation = "Small" AND
+	   availcredit_curbal_test = "X" and
+	   availcredit_test = "X" and
+	   curbal_test = "X" and
+	   LESSTHAN4_FLAG = "" and
+	   Recent4to6 < 1
+		then pr_offer = "X";
+	IF classtranslation = "Checks" AND
+	   availcredit_curbal_test = "X" and
+	   availcredit_test = "X" and
+	   curbal_test = "X" and
+	   LESSTHAN4_FLAG = ""
+		then pr_offer = "X";
+	IF pr_offer = "X"
+		then pr_amount = Available_Credit;
+	IF ownst IN ('GA' 'OK') and
+	   pr_offer = "X"
+		then pr_amount = 1400 - Payoff_Amount;
+	IF ownst = 'TX' and
+	   pr_offer = "X" and
+	   Available_Credit - Payoff_Amount >= 2100
+		then pr_amount = 2300 - Payoff_Amount;
+	ELSE IF ownst = 'TX' and
+	   pr_offer = "X" and
+	   1420 <= Available_Credit - Payoff_Amount < 2100
+		then pr_amount = 1320 - Payoff_Amount;
+	IF ownst = 'AL' and
+	   pr_offer = "X" and
+	   Available_Credit >= 1900
+		then pr_amount = 2150 - Payoff_Amount;
+	ELSE IF ownst = 'AL' and
+	   pr_offer = "X" and
+	   1500 <= Available_Credit - Payoff_Amount < 1900
+		then pr_amount = 1400 - Payoff_Amount;
+	IF pr_amount > 1000 
+		then pr_amount = 1000;
+	IF pr_amount + Payoff_Amount > 2300
+		then pr_amount = 2300 - Payoff_Amount;
+RUN;
+
+DATA FINALL_OFFERS_SL_PQ;
+	SET FINALL_OFFERS_PR;
+	IF classtranslation = "Small" AND
+	   LESSTHAN4_FLAG = ""
 		then sl_pq_offer = "X";
-	IF classtranslation IN("Small" "Checks") and
+	IF classtranslation = "Checks" 
+		then sl_pq_offer = "X";
+	IF sl_pq_offer = "X"
+		then sl_pq_amount = 2300 - Payoff_Amount;
+	IF ownst IN ('GA' 'OK') and
+	   sl_pq_offer = "X"
+		then sl_pq_amount = 1400 - Payoff_Amount;
+	IF ownst = 'TX' and
 	   sl_pq_offer = "X" and
-	   ownst IN('GA' 'OK') and
-	   LargeApprovedAmount > 0
-		then ll_pq_offer = "X" and
-			 ll_pq_amount = 3500 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
+	   Available_Credit + Payoff_Amount >= 2100
+		then sl_pq_amount = 2300 - Payoff_Amount;
+	ELSE IF ownst = 'TX' and
+	   pr_offer = "X" and
+	   1420 <= Available_Credit + Payoff_Amount < 2100
+		then pr_amount = 1320 - Payoff_Amount;
+	IF ownst = 'AL' and
 	   sl_pq_offer = "X" and
-	   ownst IN('AL' 'MO' 'NM' 'SC', 'TN', 'WI')
-		then sl_pq_amount = 2300 - Payoff_Amount; 
-	IF classtranslation IN("Small" "Checks") and
-	   sl_pq_offer = "X" and
-	   ownst IN('GA' 'OK' 'TX' 'NC' 'VA') and
-	   LargeApprovedAmount > 0
-		then ll_pq_offer = "X";
-	IF classtranslation IN("Small" "Checks") and
-	   sl_pq_offer = "X" and
-	   ownst IN('GA' 'OK' 'TX' 'NC' 'VA') and
-	   LargeApprovedAmount > 0
-		then ll_pq_amount = 3500 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   sl_pq_offer = "X" and
-	   ownst IN('GA' 'OK')
-	   	then sl_pq_amount = 1400 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   sl_pq_offer = "X" and
-	   ownst IN('TX')
-	   	then sl_pq_amount = 1300 - Payoff_Amount;
-	IF classtranslation IN("Small" "Checks") and
-	   sl_pq_offer = "X" and
-	   ownst IN('NC' 'VA')
-	   	then sl_pq_amount = 2300 - Payoff_Amount;
-	IF sl_pq_amount < 100 THEN sl_pq_amount = .;
+	   Available_Credit + Payoff_Amount >= 1900
+		then sl_pq_amount = 2150 - Payoff_Amount;
+	ELSE IF ownst = 'AL' and
+	   pr_offer = "X" and
+	   1500 <= Available_Credit + Payoff_Amount < 1900
+		then pr_amount = 1400 - Payoff_Amount;
 RUN;
 
-DATA FINALL_OFFERS2;
-	SET FINALL_OFFERS;
-*** large loan prequalified offer criteria ***;
-	IF classtranslation IN('Large' 'Auto-I' 'Auto-D') and
-	   _9S <= 8 and
-	   Available_Credit >= 100 and 
-	   Available_Credit > Payoff_Amount * 0.1 
+DATA FINALL_OFFERS_LL_PQ;
+	SET FINALL_OFFERS_SL_PQ;
+	IF sl_pq_offer = "X" and
+	   ownst IN ('GA' 'OK' 'TX' 'NC' 'VA') and
+	   largeapprovedamount > 0
 	   	then ll_pq_offer = "X";
-	IF classtranslation IN('Auto-I' 'Auto-D') and 
-	   ll_pq_offer = "X" and
-	   Payoff_Amount > 7500
-	   	then ll_pq_offer = "";
-	IF classtranslation IN('Large' 'Auto-I' 'Auto-D') and
-	   ll_pq_offer = "X"
-	   	then ll_pq_amount =  Available_Credit;
-	IF classtranslation IN('Large' 'Auto-I' 'Auto-D') and
-	   ll_pq_offer = "X" and
+	IF classtranslation = "Large" and
+	   LESSTHAN4_FLAG = "" and
+	   availcredit_curbal_test = "X" and
+	   availcredit_test = "X"
+	   	then ll_pq_offer = "X";
+	IF classtranslation IN ('Auto-I' 'Auto-D') and
+	   LESSTHAN4_FLAG = "" and
+	   availcredit_curbal_test = "X" and
+	   availcredit_test = "X" and
+	   Payoff_Amount <= 7500
+	   	then ll_pq_offer = "X";
+	IF ll_pq_offer = "X"
+		then ll_pq_amount = Available_Credit;
+	IF ll_pq_offer = "X" and
+	   sl_pq_offer = "X"
+	   	then ll_pq_amount = 3500 - Payoff_Amount;
+	IF ll_pq_offer = "X" and
+	   sl_pq_offer = "" and
 	   Available_Credit < 500
-	   	then ll_pq_amount =  500;
-	IF classtranslation IN('Large' 'Auto-I' 'Auto-D') and
-	   ll_pq_offer = "X" and
+	   	then ll_pq_amount = 500;
+	IF ll_pq_offer = "X" and
+	   sl_pq_offer = "" and
 	   Available_Credit > 7000
-	   	then ll_pq_amount =  7000;
-	IF ll_pq_amount = . THEN ll_pq_offer = "";
-	IF sl_pq_amount = . THEN sl_pq_offer = "";
-	IF pr_amount = . THEN pr_offer = "";
+	   	then ll_pq_amount = 7000;
 RUN;
 
-*** Determine the best offer ------------------------------------- ***;
-DATA FINALL_OFFERS3;
-	SET FINALL_OFFERS2;
-	OFFER_TYPE = "Branch ITA";
-	IF pr_amount > sl_pq_amount and
+DATA FINALL_OFFERS_BEST;
+	SET FINALL_OFFERS_LL_PQ;
+	OFFER_AMOUNT = 0;
+	IF pr_amount >= sl_pq_amount and
 	   pr_amount > ll_pq_amount
 	   	then OFFER_TYPE = "Preapproved";
-	IF pr_amount > sl_pq_amount and
+	IF pr_amount >= sl_pq_amount and
 	   pr_amount > ll_pq_amount
 	   	then OFFER_AMOUNT = pr_amount;
+
 	IF sl_pq_amount > pr_amount and
 	   sl_pq_amount > ll_pq_amount
 	   	then OFFER_TYPE = "Prequalified";
@@ -1373,22 +1415,22 @@ DATA FINALL_OFFERS3;
 	IF ll_pq_amount > pr_amount and
 	   ll_pq_amount > sl_pq_amount
 	   	then OFFER_AMOUNT = ll_pq_amount;
+	IF OFFER_AMOUNT < 100
+		then OFFER_TYPE = "Branch ITA";
 
-	IF Available_Credit < 100 then OFFER_TYPE = "Branch ITA";
-	IF classtranslation = "Large" and
-	   Net_Tangible_Benefit = "NO"
-	   	then OFFER_TYPE = "Branch ITA";
-	IF classtranslation = "Large" and
-	   Net_Tangible_Benefit = ""
-	   	then OFFER_TYPE = "Branch ITA";
+	IF Available_Credit IN (., 0) and 
+	   offer_type = "Branch ITA"
+	   	then offer_type = "No Available Cash";
 
-	IF RECENT4TO6 > 0 then OFFER_TYPE = "Branch ITA";
-	IF OFFER_TYPE = "Branch ITA" then OFFER_AMOUNT = .;
+	*IF OFFER_AMOUNT < 50
+		then Under_50_flag = 'X';
 
+	IF curbal_test = ""
+		then Under_50_flag = 'X';
 RUN;
 
 DATA FINAL;
-	SET FINALL_OFFERS3;
+	SET FINALL_OFFERS_BEST;
 RUN;
 
 *** COUNT OBS FROM LOAN ------------------------------------------ ***;
@@ -1560,10 +1602,37 @@ QUIT;
 
 DATA FINAL; 
 	SET FINAL;
+	IF OFFER_TYPE NE "No Available Cash";
+RUN;
+
+PROC SQL; 
+	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
+QUIT;
+
+DATA FINAL; 
+	SET FINAL;
 	IF DEFERMENT_FLAG = "";
 RUN;
 
 PROC SQL; 
+	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
+QUIT;
+
+DATA FINAL; 
+	SET FINAL;
+	IF UNDER_50_FLAG = "";
+RUN;
+
+PROC SQL; 
+	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
+QUIT;
+
+DATA FINAL; 
+	SET FINAL; 
+	IF PARTCHGOFFS_FLAG = ""; 
+RUN;
+
+PROC SQL;
 	INSERT INTO COUNT SELECT COUNT(*) AS COUNT FROM FINAL; 
 QUIT;
 
@@ -1584,7 +1653,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_10032019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_10292019.txt'
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1612,7 +1681,10 @@ Delete for TRW Status (5yr),
 Delete if DNS or DNH,
 Delete if DelINquent Renewal,
 Delete if Not Current (ATB),
+Delete if No Available Cash,
 Delete if Deferment IN last 90 days,
+Delete if Offer Amount or Payoff Amount < $50,
+Delete if Partial Charge Off,
 ;/*Delete Harvey Deferrals*/
 RUN;
 
@@ -1666,7 +1738,7 @@ RUN;
 
 DATA _NULL_;
 	SET FINALMLA;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20191003.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20191029.txt";
 	PUT @ 1 "Social Security Number (SSN)"n 
 		@ 10 "Date of Birth"n 
 		@ 18 "Last NAME"n 
@@ -1679,7 +1751,7 @@ RUN;
 *** RUN AFTER RECEIVING RESULTS FROM MLA ------------------------- ***; 
 
 FILENAME MLA1
- "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_1_CAD_20191003.txt";
+ "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_1_CAD_20191029.txt";
 
 DATA MLA1;
 	INFILE MLA1;
@@ -1763,7 +1835,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_finalHH_10032019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_finalHH_10292019.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1823,7 +1895,7 @@ QUIT;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10032019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10292019.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1831,7 +1903,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10032019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10292019.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -1843,14 +1915,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10032019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10292019.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10032019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10292019.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1867,14 +1939,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10032019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10292019.xlsx'
 	DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10032019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10292019.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1891,6 +1963,6 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_ITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_ITA_10032019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_ITA_10292019.xlsx'
 	DBMS = EXCEL;
 RUN;
