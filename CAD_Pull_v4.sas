@@ -48,6 +48,10 @@ OPTIONS MPRINT MLOGIC SYMBOLGEN; /* SET DEBUGGING OPTIONS */
 %LET _90DAYS = %SYSFUNC(putn(&_90DAYS_NUM,yymmdd10.));
 %PUT "&_90DAYS";
 
+%LET _4MO_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-122);
+%LET _4MO = %SYSFUNC(putn(&_4MO_NUM,yymmdd10.));
+%PUT "&_4MO";
+
 %PUT "&_3YR" "&_2YR" "&_5YR" "&_16MO";
 
 *** G002 Bring in loan data - LOAN1 ------------------------------ ***;
@@ -1172,9 +1176,11 @@ DATA MERGED_L_B2;
 	IF PMT_DAYS < 60 THEN LESSTHAN2_FLAG = "X";
 	IF PMT_DAYS = . & _9S < 10 THEN LESSTHAN2_FLAG = "";
 	IF PMT_DAYS < 122 THEN LESSTHAN4_FLAG = "X";
+	IF LOANDATE > "&_4MO" THEN LESSTHAN4_FLAG = "X";
 	
 	*** pmt_days calculation wINs over conprofile ---------------- ***;
 	IF PMT_DAYS > 59 & _9S > 10 THEN LESSTHAN2_FLAG = "";
+	if times30 > 1 THEN DLQ_FLAG = "X";
 RUN;
 
 PROC SQL;
@@ -1266,8 +1272,10 @@ PROC EXPORT
 RUN;
 
 **********************************************************************;
-**************************** TEST ************************************;
+**************************** Offer Assignment ************************;
 **********************************************************************;
+
+*** Create test flags, and offer and amount columns -------------- ***;
 DATA FINALL_OFFERS_PREP;
 	SET DEDUPED;
 	pr_offer = "";
@@ -1418,10 +1426,18 @@ DATA FINALL_OFFERS_BEST;
 	IF OFFER_AMOUNT < 100
 		then OFFER_TYPE = "Branch ITA";
 
+	IF LESSTHAN4_FLAG = "X" and 
+	   classtranslation = "Small"
+		then OFFER_TYPE = "Branch ITA";
+	IF LESSTHAN4_FLAG = "X" and 
+	   classtranslation = "Large" and
+	   classID NE 65
+		then OFFER_TYPE = "Branch ITA";
+
 	IF Available_Credit IN (., 0) and 
 	   offer_type = "Branch ITA"
 	   	then offer_type = "No Available Cash";
-
+	
 	*IF OFFER_AMOUNT < 50
 		then Under_50_flag = 'X';
 
