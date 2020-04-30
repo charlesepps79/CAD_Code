@@ -1,4 +1,4 @@
-﻿*** G001 ASSIGN MACRO VARIABLES ---------------------------------- ***;
+*** G001 ASSIGN MACRO VARIABLES ---------------------------------- ***;
 *** G002 Bring in loan data - LOAN1 ------------------------------ ***;
 *** G003 Bring in Borrower Data - BORRNLS ------------------------ ***;
 
@@ -47,6 +47,10 @@ OPTIONS MPRINT MLOGIC SYMBOLGEN; /* SET DEBUGGING OPTIONS */
 %LET _90DAYS_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-90);
 %LET _90DAYS = %SYSFUNC(putn(&_90DAYS_NUM,yymmdd10.));
 %PUT "&_90DAYS";
+
+%LET _30DAYS_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-30);
+%LET _30DAYS = %SYSFUNC(putn(&_30DAYS_NUM,yymmdd10.));
+%PUT "&_30DAYS";
 
 %LET _4MO_NUM = %EVAL(%SYSFUNC(inputn(&pulldate,yymmdd10.))-122);
 %LET _4MO = %SYSFUNC(putn(&_4MO_NUM,yymmdd10.));
@@ -667,7 +671,7 @@ RUN;
 DATA DEFERMENTS;
 	SET dw.payment(
 		KEEP = BRACCTNO TRDATE TRCD);
-	WHERE TRDATE >= "&_90DAYS"; /* 90 days back */
+	WHERE TRDATE >= "&_30DAYS"; /* 30 days back */
 	IF TRCD IN ("DF","D2","RV") THEN DEFERMENT_FLAG = "X";
 RUN;
 
@@ -695,6 +699,7 @@ DATA DEFERMENTS;
 	IF x;
 RUN;
 
+/*
 PROC IMPORT 
 	DATAFILE = 
 		"\\mktg-app01\E\cepps\CAD\Reports\11_2019\dorian.xlsx" 
@@ -718,6 +723,7 @@ DATA DEFERMENTS;
 	IF x;
 	IF DORIAN_FLAG = "X" THEN DEFERMENT_FLAG = "";
 RUN;
+*/
 
 PROC SORT 
 	DATA = DEFERMENTS;
@@ -824,6 +830,7 @@ DATA MERGED_L_B2;
 				 "0498", "600", "0600", "698", "0698", 
 				 "898", "0898", "9000", "9000") 
 		THEN BADBRANCH_FLAG = "X";
+
 	IF SUBSTR(OWNBR, 3, 2) = "99" THEN BADBRANCH_FLAG = "X";
 	FIRSTNAME = COMPRESS(FIRSTNAME, '1234567890!@#$^&*()''"%');
 	LASTNAME = COMPRESS(LASTNAME, '1234567890!@#$^&*()''"%');
@@ -833,6 +840,7 @@ DATA MERGED_L_B2;
 	IF STATE = "" THEN MISSINGINFO_FLAG = "X";
 	IF FIRSTNAME = "" THEN MISSINGINFO_FLAG = "X";
 	IF LASTNAME = "" THEN MISSINGINFO_FLAG = "X";
+	IF DOB_NUM < 19000101 THEN MISSINGINFO_FLAG = "X";
 
 	*** FIND STATES OUTSIDE OF FOOTPRINT ------------------------- ***;
 	IF STATE NOT IN ("AL", "GA", "NC", "NM", "OK", "SC", "TN", "TX", 
@@ -850,12 +858,13 @@ DATA MERGED_L_B2;
 	IF SSNO1 = "" THEN SSNO1 = SSNO;
 
 	*** IDENTIFY RETAIL LOANS ------------------------------------ ***;
-	IF CLASSTRANSLATION = "Retail" THEN RETAILDELETE_FLAG = "X";
+	IF CLASSTRANSLATION = "Retail" AND OWNST IN ('NC' 'OK') 
+		THEN RETAILDELETE_FLAG = "X";
 	IF CLASSTRANSLATION IN ('Auto-I' 'Auto-D')
 		THEN AUTODELETE_FLAG = "X";
 
 	IF Payoff_Amount < 50 THEN CURBAL_FLAG = "X";
-	IF PURCD IN ("011", "015", "020") THEN DLQREN_FLAG = "X";
+	IF PURCD IN ("015", "016", "020", "022") THEN DLQREN_FLAG = "X";
 	IF APRate < 21 and
 	   classtranslation IN ('Small' 'Large')
 		THEN DLQREN_FLAG = "X";
@@ -882,23 +891,63 @@ DATA MERGED_L_B2;
 	if ownbr = "1018" then ownbr = "1008";
 	if zip =: "29659" & ownbr = "0152" then ownbr = "0121";
 	if zip =: "36264" & ownbr = "0877" then ownbr = "0870";
+
+	/*COVID*/
+	IF OWNST = "NM" THEN DELETE;
+	/*Tiger King Branches*/
+	IF OWNBR = "0415" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0910" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0585" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0904" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0915" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0518" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0921" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0504" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0918" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0414" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0533" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0534" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0539" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0541" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0560" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0566" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0581" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0570" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0561" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0578" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0535" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0557" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0551" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0576" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0559" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0917" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0540" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0916" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0906" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0901" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0924" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0586" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0413" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0589" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0552" THEN BADBRANCH_FLAG = "X";
+	IF OWNBR = "0580" THEN BADBRANCH_FLAG = "X";
 RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-23-2020-06-29.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-23-2020-06-29.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-10-24-2019-06-28.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-23-2020-06-29.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1165,7 +1214,8 @@ DATA MERGED_L_B2;
 	IF _30_RECENT6 > 0 | _30 > 2 | _60 > 0 | _90PLUS > 0 
 		THEN CONPROFILE_FLAG = "X";
 	_9S = COUNTC(CONPROFILE1, "9");
-	if _9S > 10 THEN LESSTHAN2_FLAG = "X";
+	if _9S > 10 AND CLASSTRANSLATION NE 'Checks' 
+		THEN LESSTHAN2_FLAG = "X";
 	XNO_TRUEDUEDATE2 = INPUT(SUBSTR(XNO_TRUEDUEDATE, 6, 2) || '/' || 
 					   SUBSTR(XNO_TRUEDUEDATE, 9, 2) || '/' || 
 					   SUBSTR(XNO_TRUEDUEDATE, 1, 4), mmddyy10.);
@@ -1173,13 +1223,19 @@ DATA MERGED_L_B2;
 				   SUBSTR(FIRSTPYDATE, 9, 2) || '/' || 
 				   SUBSTR(FIRSTPYDATE, 1, 4), mmddyy10.);
 	PMT_DAYS = XNO_TRUEDUEDATE2 - FIRSTPYDATE2;
-	IF PMT_DAYS < 60 THEN LESSTHAN2_FLAG = "X";
+	IF PMT_DAYS < 60 AND CLASSTRANSLATION NE 'Checks' 
+		THEN LESSTHAN2_FLAG = "X";
+	IF PMT_DAYS < 30 AND CLASSTRANSLATION = 'Checks' 
+		THEN LESSTHAN2_FLAG = "X";
 	IF PMT_DAYS = . & _9S < 10 THEN LESSTHAN2_FLAG = "";
 	IF PMT_DAYS < 122 THEN LESSTHAN4_FLAG = "X";
 	IF LOANDATE > "&_4MO" THEN LESSTHAN4_FLAG = "X";
 	
 	*** pmt_days calculation wINs over conprofile ---------------- ***;
-	IF PMT_DAYS > 59 & _9S > 10 THEN LESSTHAN2_FLAG = "";
+	IF PMT_DAYS > 59 & _9S > 10 AND CLASSTRANSLATION NE 'Checks' 
+		THEN LESSTHAN2_FLAG = "";
+	IF PMT_DAYS > 29 & _9S > 10 AND CLASSTRANSLATION = 'Checks' 
+		THEN LESSTHAN2_FLAG = "";
 	if times30 > 1 THEN DLQ_FLAG = "X";
 RUN;
 
@@ -1267,7 +1323,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_flagged_10292019.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_flagged_04292020.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1403,25 +1459,14 @@ RUN;
 DATA FINALL_OFFERS_BEST;
 	SET FINALL_OFFERS_LL_PQ;
 	OFFER_AMOUNT = 0;
-	IF pr_amount >= sl_pq_amount and
-	   pr_amount > ll_pq_amount
-	   	then OFFER_TYPE = "Preapproved";
-	IF pr_amount >= sl_pq_amount and
-	   pr_amount > ll_pq_amount
-	   	then OFFER_AMOUNT = pr_amount;
-
-	IF sl_pq_amount > pr_amount and
-	   sl_pq_amount > ll_pq_amount
+	IF sl_pq_amount > ll_pq_amount
 	   	then OFFER_TYPE = "Prequalified";
-	IF sl_pq_amount > pr_amount and
-	   sl_pq_amount > ll_pq_amount
+	IF sl_pq_amount > ll_pq_amount
 	   	then OFFER_AMOUNT = sl_pq_amount;
 	
-	IF ll_pq_amount > pr_amount and
-	   ll_pq_amount > sl_pq_amount
+	IF ll_pq_amount > sl_pq_amount
 	   	then OFFER_TYPE = "Prequalified";
-	IF ll_pq_amount > pr_amount and
-	   ll_pq_amount > sl_pq_amount
+	IF ll_pq_amount > sl_pq_amount
 	   	then OFFER_AMOUNT = ll_pq_amount;
 	IF OFFER_AMOUNT < 100
 		then OFFER_TYPE = "Branch ITA";
@@ -1658,7 +1703,7 @@ RUN;
 
 DATA FINAL;
 	SET FINAL;
-	CAMPAIGN_ID="CAD11.0_2019";
+	CAMPAIGN_ID="CAD5.0_2020";
 RUN;
 
 PROC SORT
@@ -1669,7 +1714,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_10292019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_04292020.txt'
 		REPLACE DBMS = TAB;
  RUN;
 
@@ -1715,6 +1760,19 @@ DATA MLA;
 	SSNO1 = put(input(SSNO1_A,best9.),z9.);
 	DOB = compress(DOB,"1234567890 " , "kis");
 	if DOB = ' ' then delete;
+	IF DOB < 19000101 then delete;
+RUN;
+
+DATA MLA;
+	SET FINAL;
+	KEEP SSNO1 DOB LASTNAME FIRSTNAME MIDDLENAME BRACCTNO SSNO1_A;
+	LASTNAME = compress(LASTNAME,"ABCDEFGHIJKLMNOPQRSTUVWXYZ " , "kis");
+	MIDDLENAME = compress(MIDDLENAME,"ABCDEFGHIJKLMNOPQRSTUVWXYZ " , "kis");
+	FIRSTNAME = compress(FIRSTNAME,"ABCDEFGHIJKLMNOPQRSTUVWXYZ " , "kis");
+	SSNO1_A = compress(SSNO1,"1234567890" , "ki");
+	SSNO1 = put(input(SSNO1_A,best9.),z9.);
+	DOB = compress(DOB,"1234567890 " , "kis");
+	if DOB = ' ' then delete;
 RUN;
 
 DATA MLA;
@@ -1754,7 +1812,7 @@ RUN;
 
 DATA _NULL_;
 	SET FINALMLA;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20191029.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\CAD_20200429.txt";
 	PUT @ 1 "Social Security Number (SSN)"n 
 		@ 10 "Date of Birth"n 
 		@ 18 "Last NAME"n 
@@ -1767,7 +1825,7 @@ RUN;
 *** RUN AFTER RECEIVING RESULTS FROM MLA ------------------------- ***; 
 
 FILENAME MLA1
- "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_1_CAD_20191029.txt";
+ "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_4_CAD_20200429.txt";
 
 DATA MLA1;
 	INFILE MLA1;
@@ -1851,7 +1909,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_finalHH_10292019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_finalHH_04292020.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1911,7 +1969,7 @@ QUIT;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10292019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_EC_04292020.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1919,7 +1977,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_EC_10292019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_EC_04292020.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -1931,14 +1989,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10292019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_preapproved_04292020.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_preapproved_10292019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_preapproved_04292020.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1955,14 +2013,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10292019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_prequalified_04292020.xlsx'
 	DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_prequalified_10292019.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_prequalified_04292020.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -1979,6 +2037,6 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_ITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\11_2019\November_CAD_2019_final_ITA_10292019.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_05\May_CAD_2020_final_ITA_04292020.xlsx'
 	DBMS = EXCEL;
 RUN;
