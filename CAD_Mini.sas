@@ -897,19 +897,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-30-2020-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-01-2021-06-25.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-30-2020-06-27.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-01-2021-06-25.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-30-2020-06-27.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-01-2021-06-25.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1306,7 +1306,7 @@ DATA MERGED_L_B2;
 						  44, 45, 46, 47, 49, 50, 51, 52, 9001, 9002, 
 						  9003, 9004, 9005, 9006, 9007, 9008, 9009, 
 						  9010, 9011, 9012, 9013, 9014, 9016, 9018, 
-						  9020, 9022) 
+						  9020, 9022, 9032, 9033) 
 		THEN STATFL_FLAG = "X";
 RUN;
 
@@ -1314,14 +1314,15 @@ PROC SQL;
 	CREATE TABLE ll_approved AS
 	SELECT
     	t1.LoanNumber, 
-    	t1.LargeApprovedAmount
+    	t1.LargeApprovedAmount,
+		t1.RiskRank_Large
 	FROM DW.AppData t1;
 QUIT;
 
 DATA ll_approved;
 	SET ll_approved;
 	BRACCTNO = LoanNumber;
-	KEEP BRACCTNO LargeApprovedAmount;
+	KEEP BRACCTNO LargeApprovedAmount RiskRank_Large;
 RUN;
 
 PROC SORT 
@@ -1347,7 +1348,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_flagged_08012020.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_flagged_04022021.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1599,6 +1600,21 @@ DATA FINALL_OFFERS_BEST;
 
 	IF OFFER_AMOUNT < 100
 		then OFFER_TYPE = "Branch ITA";
+	IF Available_Credit IN (., 0) and 
+	   offer_type = "Branch ITA"
+	   	then offer_type = "No Available Cash";
+
+	IF offer_type = "No Available Cash" and 
+	   classtranslation = "Large" and
+	   RiskRank_Large IN ("EXCELLENT-I", "EXCELLENT-II", "GOOD")
+	   	then NAC_LL = "X";
+	IF offer_type = "No Available Cash" and 
+	   classtranslation = "Small" and
+	   THREE_PMNT_Flag = "TRUE"
+	   	then NAC_SL = "X";
+	IF offer_type = "No Available Cash" and 
+	   classtranslation = "Checks"
+	   	then NAC_CK = "X";
 RUN;
 
 DATA FINAL;
@@ -1774,8 +1790,8 @@ QUIT;
 
 DATA FINAL; 
 	SET FINAL;
-	IF OFFER_TYPE NE "No Available Cash";
-	IF OFFER_TYPE NE "Branch ITA";
+	*IF OFFER_TYPE NE "No Available Cash";
+	*IF OFFER_TYPE NE "Branch ITA";
 RUN;
 
 PROC SQL; 
@@ -1815,7 +1831,7 @@ RUN;
 
 DATA FINAL;
 	SET FINAL;
-	CAMPAIGN_ID="PB8.0_2020";
+	CAMPAIGN_ID="PB05.0_2021";
 RUN;
 
 PROC SORT
@@ -1826,8 +1842,15 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_08012020.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_04022021.txt'
 		REPLACE DBMS = TAB;
+ RUN;
+ 
+PROC EXPORT
+	DATA = FINAL 
+	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_04022021.xlsx'
+		REPLACE DBMS = EXCEL;
  RUN;
 
  DATA WATERFALL;
@@ -1924,7 +1947,7 @@ RUN;
 
 DATA _NULL_;
 	SET FINALMLA;
-	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\PB_HOTLIST_20200801.txt";
+	FILE "\\mktg-app01\E\Production\MLA\MLA-INput files TO WEBSITE\PB_HOTLIST_20210402.txt";
 	PUT @ 1 "Social Security Number (SSN)"n 
 		@ 10 "Date of Birth"n 
 		@ 18 "Last NAME"n 
@@ -1937,7 +1960,7 @@ RUN;
 *** RUN AFTER RECEIVING RESULTS FROM MLA ------------------------- ***; 
 
 FILENAME MLA1
- "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_5_PB_HOTLIST_20200801.txt";
+ "\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_6_PB_HOTLIST_20201102.txt";
 
 DATA MLA1;
 	INFILE MLA1;
@@ -2021,7 +2044,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_finalHH_08012020.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_finalHH_04022021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2074,14 +2097,15 @@ PROC SQL;
 	SELECT BRACCTNO, OWNBR, CLASSTRANSLATION, SSNO1_RT7, CIFNO,
 		   FIRSTNAME, MIDDLENAME, LASTNAME, ADR1, ADR2, CITY, STATE,
 		   ZIP, DOB, OFFER_TYPE, OFFER_AMOUNT, CAMPAIGN_ID, /*DROPDATE,
-		   EXPIRATIONDATE,*/ VND_DROP, VND_DUP, Acctrefno
+		   EXPIRATIONDATE,*/ VND_DROP, VND_DUP, Acctrefno, NAC_LL, 
+		   NAC_SL, NAC_CK
 	FROM FINALHH2;
 QUIT;
 
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_EC_08012020.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_EC_04022021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2089,7 +2113,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_EC_08012020.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_EC_04022021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -2101,14 +2125,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_preapproved_08012020.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_preapproved_04022021.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_preapproved_08012020.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_preapproved_04022021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2125,14 +2149,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_prequalified_08012020.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_prequalified_04022021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_prequalified_08012020.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_prequalified_04022021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2149,6 +2173,33 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_ITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2020_07\PB_HOTLIST_2020_final_ITA_08012020.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_ITA_04022021.xlsx'
 	DBMS = EXCEL;
 RUN;
+
+DATA FINAL_NAC;
+	SET FINALEC;
+	IF OFFER_TYPE = "No Available Cash";
+RUN;
+
+PROC EXPORT
+	DATA = FINAL_NAC 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_NAC_04022021.xlsx'
+	DBMS = EXCEL;
+RUN;
+
+DATA FINAL_NAC_OFFER;
+	SET FINALEC;
+	IF NAC_LL = "X" OR
+	   NAC_SL = "X" OR
+	   NAC_CK = "X";
+RUN;
+
+PROC EXPORT
+	DATA = FINAL_NAC 
+	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_NAC_OFFER_04022021.xlsx'
+	DBMS = EXCEL;
+RUN;
+
