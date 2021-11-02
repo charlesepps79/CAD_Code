@@ -60,9 +60,9 @@ OPTIONS MPRINT MLOGIC SYMBOLGEN; /* SET DEBUGGING OPTIONS */
 
 data _null_;
 	call symput ('exportMLA1', 
-		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20210502p1.txt');
+		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20210801p1.txt');
 	call symput ('exportMLA2', 
-		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20210502p2.txt');
+		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20210801p2.txt');
 run;
 
 *** G002 Bring in loan data - LOAN1 ------------------------------ ***;
@@ -92,7 +92,7 @@ DATA LOAN1;
 		  POFFDATE = "" &
 		  BNKRPTDATE = "" & 
 		  OWNST IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN", 
-					"MO", "WI");
+					"MO", "WI", "IL");
 
 	*** CREATE `SS7BRSTATE` VARIABLE ----------------------------- ***;
 	SS7BRSTATE = CATS(SSNO1_RT7, SUBSTR(OWNBR, 1, 2));
@@ -229,7 +229,7 @@ DATA LOANEXTRA;
 		   PLDATE = "" & 
 		   POFFDATE = "" &
 		   OWNST IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN", 
-					 "MO", "WI");
+					 "MO", "WI", "IL");
 
 	*** FLAG BAD `SSNO1`S THAT BEGIN WITH "99" OR "98" AS          ***;
 	*** `BADSSN`S ------------------------------------------------ ***;
@@ -286,7 +286,7 @@ DATA LOANPARADATA;
 		  PLDATE = "" & 
 		  BNKRPTDATE = "" &
 		  OWNST NOT IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", 
-						"TN", "MO", "WI");
+						"TN", "MO", "WI", "IL");
 
 	*** CONCATENATE `SSNO1_RT7` WITH THE FIRST 2 NUMBERS IN        ***;
 	*** `OWNBR` AND STORE IN NEW VARIABLE, `SS7BRSTATE` ---------- ***;
@@ -851,7 +851,7 @@ DATA MERGED_L_B2;
 
 	*** FIND STATES OUTSIDE OF FOOTPRINT ------------------------- ***;
 	IF STATE NOT IN ("AL", "GA", "NC", "NM", "OK", "SC", "TN", "TX", 
-					 "VA", "MO", "WI") 
+					 "VA", "MO", "WI", "IL") 
 		THEN OOS_FLAG = "X"; 
 
 	*** FLAG DNS DNH --------------------------------------------- ***;
@@ -906,19 +906,19 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-29-2021-06-26.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-29-2021-06-25.xlsx" 
 		OUT = DNS DBMS = EXCEL;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-29-2021-06-26.xlsx" 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-29-2021-06-25.xlsx" 
 		OUT = DNH DBMS = EXCEL;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-29-2021-06-26.xlsx"
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-07-29-2021-06-25.xlsx"
 		OUT = DNHC DBMS = EXCEL; 
 	SHEET = "DNH-C";
 RUN;
@@ -1359,7 +1359,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_flagged_05022021.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_flagged_08012021.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1853,14 +1853,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_05022021.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_08012021.txt'
 		REPLACE DBMS = TAB;
  RUN;
  
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_08012021.xlsx'
 		REPLACE DBMS = EXCEL;
  RUN;
 
@@ -2018,7 +2018,7 @@ PROC PRINT
 RUN;
 */
 filename mla1 
-	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_7_PB_HOTLIST_20210502p1.txt";
+	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_9_PB_HOTLIST_20210801p1.txt";
 
 data mla1;
 	infile mla1;
@@ -2034,7 +2034,7 @@ data mla1;
 run;
 
 filename mla2 
-	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_7_PB_HOTLIST_20210502p2.txt";
+	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_9_PB_HOTLIST_20210801p2.txt";
 
 data mla2;
 	infile mla2;
@@ -2128,7 +2128,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_finalHH_05022021.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_finalHH_08012021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2189,7 +2189,7 @@ QUIT;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_EC_05022021.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_EC_08012021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2197,7 +2197,7 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_EC_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_EC_08012021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -2209,14 +2209,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_preapproved_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_preapproved_08012021.xlsx'
 		DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_preapproved_05022021.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_preapproved_08012021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2233,14 +2233,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_prequalified_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_prequalified_08012021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_prequalified_05022021.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_prequalified_08012021.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2257,7 +2257,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_ITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_ITA_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_ITA_08012021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -2269,7 +2269,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_NAC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_NAC_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_NAC_08012021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
@@ -2283,7 +2283,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_NAC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_05\PB_HOTLIST_2021_final_NAC_OFFER_05022021.xlsx'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2021_08\PB_HOTLIST_2021_final_NAC_OFFER_08012021.xlsx'
 	DBMS = EXCEL;
 RUN;
 
