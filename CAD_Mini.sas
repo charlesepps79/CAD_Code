@@ -60,9 +60,9 @@ OPTIONS MPRINT MLOGIC SYMBOLGEN; /* SET DEBUGGING OPTIONS */
 
 data _null_;
 	call symput ('exportMLA1', 
-		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20220302p1.txt');
+		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20220413p1.txt');
 	call symput ('exportMLA2', 
-		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20220302p2.txt');
+		'\\mktg-APP01\E\Production\MLA\MLA-Input files TO WEBSITE\PB_HOTLIST_20220413p2.txt');
 run;
 
 *** G002 Bring in loan data - LOAN1 ------------------------------ ***;
@@ -92,7 +92,7 @@ DATA LOAN1;
 		  POFFDATE = "" &
 		  BNKRPTDATE = "" & 
 		  OWNST IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN", 
-					"MO", "WI", "IL") /*&
+					"MO", "WI", "IL", "UT", "MS") /*&
 		  OWNBR IN ("0533", "0536", "0525", "0541", "0587", "0567", 
 					"0578", "0902", "0901", "0911", "1010", "1003", 
 					"0705", "0831", "1211", "0908", "0814", "0804", 
@@ -235,7 +235,7 @@ DATA LOANEXTRA;
 		   PLDATE = "" & 
 		   POFFDATE = "" &
 		   OWNST IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", "TN", 
-					 "MO", "WI", "IL") /*&
+					 "MO", "WI", "IL", "UT", "MS") /*&
 		  OWNBR IN ("0533", "0536", "0525", "0541", "0587", "0567", 
 					"0578", "0902", "0901", "0911", "1010", "1003", 
 					"0705", "0831", "1211", "0908", "0814", "0804", 
@@ -298,7 +298,7 @@ DATA LOANPARADATA;
 		  PLDATE = "" & 
 		  BNKRPTDATE = "" &
 		  OWNST NOT IN ("NC","VA","NM","SC","OK","TX", "AL", "GA", 
-						"TN", "MO", "WI", "IL") /*&
+						"TN", "MO", "WI", "IL", "UT", "MS") /*&
 		  OWNBR IN ("0533", "0536", "0525", "0541", "0587", "0567", 
 					"0578", "0902", "0901", "0911", "1010", "1003", 
 					"0705", "0831", "1211", "0908", "0814", "0804", 
@@ -632,7 +632,7 @@ PROC SORT
 	BY SS7BRSTATE;
 RUN;
 
-DATA MERGED_L_B2; /* MERGE PULL WITH TRW FLAGS */
+DATA MERGED_L_B2; /* MERGE PULL WITH FLAGS */
 	MERGE MERGED_L_B2(IN = x) TRWSTATUS_FL;
 	BY SS7BRSTATE;
 	IF x;
@@ -869,7 +869,7 @@ DATA MERGED_L_B2;
 
 	*** FIND STATES OUTSIDE OF FOOTPRINT ------------------------- ***;
 	IF STATE NOT IN ("AL", "GA", "NC", "NM", "OK", "SC", "TN", "TX", 
-					 "VA", "MO", "WI", "IL") 
+					 "VA", "MO", "WI", "IL", "UT", "MS") 
 		THEN OOS_FLAG = "X"; 
 
 	*** FLAG DNS DNH --------------------------------------------- ***;
@@ -924,20 +924,20 @@ RUN;
 
 *** ED'S DNSDNH - NEED TO CHANGE FILE NAMES BASED ON UPDATE DATE - ***;
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-02-24-2022-06-26.xlsx" 
-		OUT = DNS DBMS = EXCEL;
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-07-2022-06-26.xlsx" 
+		OUT = DNS DBMS = XLSX;
 	SHEET = "DNS";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-02-24-2022-06-26.xlsx" 
-		OUT = DNH DBMS = EXCEL;
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-07-2022-06-26.xlsx" 
+		OUT = DNH DBMS = XLSX;
 	SHEET = "DNH";
 RUN;
 
 PROC IMPORT 
-	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-02-24-2022-06-26.xlsx"
-		OUT = DNHC DBMS = EXCEL; 
+	DATAFILE = "\\server-lcp\LiveCheckService\DNHCustomers\DNHFile-04-07-2022-06-26.xlsx"
+		OUT = DNHC DBMS = XLSX; 
 	SHEET = "DNH-C";
 RUN;
 
@@ -1377,7 +1377,7 @@ RUN;
 
 PROC EXPORT 
 	DATA = DEDUPED 
-	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_flagged_02152022.txt' 
+	    OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_flagged_04132022.txt' 
 		DBMS = TAB;
 RUN;
 
@@ -1871,15 +1871,15 @@ RUN;
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_02152022.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_04132022.txt'
 		REPLACE DBMS = TAB;
  RUN;
  
 PROC EXPORT
 	DATA = FINAL 
 	 /* OUTFILE = '\\mktg-app01\E\Production\2018\CAD_BTS_2018\August_BTS_2018_final_06082018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_02152022.xlsx'
-		REPLACE DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_04132022.xlsx'
+		REPLACE DBMS = XLSX;
  RUN;
 
  DATA WATERFALL;
@@ -2036,7 +2036,7 @@ PROC PRINT
 RUN;
 */
 filename mla1 
-	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_11_PB_HOTLIST_20220302p1_test.txt";
+	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_12_PB_HOTLIST_20220413p1.txt";
 
 data mla1;
 	infile mla1;
@@ -2052,7 +2052,7 @@ data mla1;
 run;
 
 filename mla2 
-	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_11_PB_HOTLIST_20220302p2_test.txt";
+	"\\mktg-app01\E\Production\MLA\MLA-Output files FROM WEBSITE\MLA_5_12_PB_HOTLIST_20220413p2.txt";
 
 data mla2;
 	infile mla2;
@@ -2146,7 +2146,7 @@ RUN;
 PROC EXPORT 
 	DATA = FINALHH2 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_finalHH_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_finalHH_02152022.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_finalHH_04132022.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2207,7 +2207,7 @@ QUIT;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\05_2018\August_CAD_BTS_2018_final_EC_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_EC_02152022.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_EC_04132022.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2215,8 +2215,8 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_EC_02152022.xlsx'
-	DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_EC_04132022.xlsx'
+	DBMS = XLSX;
 RUN;
 
 DATA FINALEC2;
@@ -2227,14 +2227,14 @@ RUN;
 PROC EXPORT
 	DATA = FINALEC2
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_preapproved_02152022.xlsx'
-		DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_preapproved_04132022.xlsx'
+		DBMS = XLSX;
 RUN;
 
 PROC EXPORT
 	DATA = FINALEC2 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_preapproved_02152022.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_preapproved_04132022.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2251,14 +2251,14 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_prequalified_02152022.xlsx'
-	DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_prequalified_04132022.xlsx'
+	DBMS = XLSX;
 RUN;
 
 PROC EXPORT
 	DATA = FINAL_PREQUAL 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_EC2_05012018.txt' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_prequalified_02152022.txt'
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_prequalified_04132022.txt'
 		DBMS = DLM;
 	DELIMITER = ",";
 RUN;
@@ -2275,8 +2275,8 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_ITA 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_ITA_02152022.xlsx'
-	DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_ITA_04132022.xlsx'
+	DBMS = XLSX;
 RUN;
 
 DATA FINAL_NAC;
@@ -2287,8 +2287,8 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_NAC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_NAC_02152022.xlsx'
-	DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_NAC_04132022.xlsx'
+	DBMS = XLSX;
 RUN;
 
 DATA FINAL_NAC_OFFER;
@@ -2301,7 +2301,7 @@ RUN;
 PROC EXPORT
 	DATA = FINAL_NAC 
 	 /* OUTFILE = '\\rmc.local\dfsroot\Dept\MarketINg\2018 Programs\1) Direct Mail Programs\2018 CAD Programs\May 2018 CAD\August_CAD_BTS_2018_final_ITA_05012018.xlsx' */
-		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_02\PB_HOTLIST_2022_final_NAC_OFFER_02152022.xlsx'
-	DBMS = EXCEL;
+		OUTFILE = '\\mktg-app01\E\cepps\CAD\Reports\2022_04\PB_HOTLIST_2022_final_NAC_OFFER_04132022.xlsx'
+	DBMS = XLSX;
 RUN;
 
